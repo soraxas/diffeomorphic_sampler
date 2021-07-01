@@ -6,17 +6,17 @@ project(diffeomorphic_sampler CXX)
 set(LIBTORCH_ROOT $ENV{HOME}/ROS/torch/libtorch)
 
 if (NOT EXISTS ${LIBTORCH_ROOT})
-message( FATAL_ERROR "Folder '$LIBTORCH_ROOT' does not exists. Make sure LIBTORCH_ROOT points to libtorch's c++ library." )
+    message( FATAL_ERROR "Folder '$LIBTORCH_ROOT' does not exists. Make sure LIBTORCH_ROOT points to libtorch's c++ library." )
 endif()
 
 # add the libtorch prefix
 list(APPEND CMAKE_PREFIX_PATH ${LIBTORCH_ROOT})
 
-include_directories(
-  ${LIBTORCH_ROOT}/include
-  ${LIBTORCH_ROOT}/include/torch/csrc/api/include
-  ${CMAKE_SOURCE_DIR}
-  )
+# include_directories(
+#   ${LIBTORCH_ROOT}/include
+#   ${LIBTORCH_ROOT}/include/torch/csrc/api/include
+#   ${CMAKE_SOURCE_DIR}
+#   )
 ########################################
 
 # message("--------------")
