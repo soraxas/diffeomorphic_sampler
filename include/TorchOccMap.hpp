@@ -1,3 +1,5 @@
+#pragma once
+
 #include <torch/script.h> // One-stop header.
 
 //#include <torch/torch.h>
