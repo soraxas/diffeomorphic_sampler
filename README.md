@@ -2,16 +2,46 @@
 
 This module is to be used as an extension to the OMPL. This requires injecting code to OMPL's CMakeLists (such that this repo is built as a sub-directory), and injecting into ompl planners' code that allocates samplers.
 
+**IMPORTANT:** Note that since this sampler depends on `MoveitIt`'s robot model and `OMPL`'s state space, and yet this module will need to be inject within ompl (hence circular dependency: MoveIt -> OMPL -> diffeomorphic-sampler -> MoveIt), this will requires some tricky to be compile successfully.
+
+1. First compile the entire ROS workspace as usual, *without* any of the following changes. (If you had already modified `ompl` source, you can use git to revert to one of the official commit that contains none of these changes)
+    ```sh
+    # e.g.
+    cd ws_sbp
+    cd src/ompl
+    git checkout origin/main
+    cd ../..
+    catkin build
+    ```
+2. Then, both MoveIt and OMPL inside the workspace (e.g. `ws_sbp`) should now be built. Modifies the changes specified below to OMPL, make sure the variables (e.g. `MOVEIT_SRC_ROOT` etc.) points to the correct path.
+3. After applying the changes to OMPL src, rerun `catkin build` in the workspace. This works because it can link to the older version of moveit (older, but not modified).
+
 ## Changes to CMakeLists
 
 Required changes to `src/ompl/CMakeLists.txt`:
 
 ```cmake
 ##################################################################
-add_subdirectory(
-    $ENV{HOME}/ROS/ws_jaco-diff/src/diffeomorphic_sampler  # <---- this might need to be changed
-    diff-samp
-)
+## NECESSARY DIR SETTINGS by user
+set(DIFF_SAMP_DIR $ENV{HOME}/research/diffeomorphic_sampler)
+#set(MOVEIT_SRC_ROOT $ENV{HOME}/ROS/ws_jaco-diff/src/moveit)
+set(MOVEIT_SRC_ROOT ${CMAKE_SOURCE_DIR}/../moveit)
+# typical var catkin_DIR=/opt/ros/noetic/share/catkin/cmake
+# we will walk backward to find system include path
+set(CATKIN_SYSTEM_INCLUDE "${catkin_DIR}/../../../include")
+##################################################################
+function(ensure_path_exists _dir)
+  if(NOT IS_DIRECTORY "${_dir}" OR NOT EXISTS "${_dir}")
+    message(FATAL_ERROR "The given directory '${_dir}' does not exists!")
+  endif()
+endfunction(ensure_path_exists)
+## Ensure path exists, sanity check!
+ensure_path_exists("${DIFF_SAMP_DIR}")
+ensure_path_exists("${MOVEIT_SRC_ROOT}")
+ensure_path_exists("${CATKIN_SYSTEM_INCLUDE}")
+##################################################################
+## add the actual source for diff sampler
+add_subdirectory(${DIFF_SAMP_DIR} diff-samp)
 #find_package(catkin REQUIRED COMPONENTS diffeomorphic_state_sampler)
 target_link_libraries(ompl PUBLIC diffeomorphic_state_sampler)
 ##################################################################
@@ -21,14 +51,14 @@ target_compile_features(ompl PRIVATE cxx_range_for)
 target_link_libraries(ompl PRIVATE ${TORCH_LIBRARIES})
 ##################################################################
 ## Include necessary headers from MoveIt
-set(MOVEIT_SRC_ROOT $ENV{HOME}/ROS/ws_jaco-diff/src/moveit)  # <---- this might need to be changed
 target_include_directories(
         ompl PRIVATE
         ${MOVEIT_SRC_ROOT}/moveit_planners/ompl/ompl_interface/include
         ${MOVEIT_SRC_ROOT}/moveit_core/robot_model/include
         ${MOVEIT_SRC_ROOT}/moveit_core/macros/include
         ${MOVEIT_SRC_ROOT}/moveit_core/exceptions/include
-        /opt/ros/melodic/include  # <---- this might need to be changed
+        #/opt/ros/melodic/include
+        ${CATKIN_SYSTEM_INCLUDE}
 )
 ##################################################################
 ## Link to MoveIt interface for robot model

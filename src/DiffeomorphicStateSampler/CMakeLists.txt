@@ -33,12 +33,6 @@ target_include_directories(diffeomorphic_state_sampler PUBLIC
 )
 
 
-
-
-
-
-
-
 target_link_libraries(diffeomorphic_state_sampler PUBLIC torch_occ_map)
 target_include_directories(diffeomorphic_state_sampler PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
